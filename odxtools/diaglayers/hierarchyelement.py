@@ -518,10 +518,14 @@ class HierarchyElement(DiagLayer):
             if not isinstance(parent_layer, HierarchyElement):
                 continue
             for cp in parent_layer._compute_available_communication_parameters():
+                if cp.spec is None:
+                    continue
                 com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
         # finally, handle the locally defined communication parameters
         for cp in getattr(self.hierarchy_element_raw, "comparam_refs", []):
+            if cp.spec is None:
+                continue
             com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
         return list(com_params_dict.values())
