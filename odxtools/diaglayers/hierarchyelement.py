@@ -518,13 +518,16 @@ class HierarchyElement(DiagLayer):
             if not isinstance(parent_layer, HierarchyElement):
                 continue
             for cp in parent_layer._compute_available_communication_parameters():
-                if cp.spec is None:
-                    continue
                 com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
         # finally, handle the locally defined communication parameters
         for cp in getattr(self.hierarchy_element_raw, "comparam_refs", []):
             if cp.spec is None:
+                # discard all COMPARAM-REFs which point to parameters
+                # that have not been defined. Note that this can only
+                # happen in non-strict mode since in strict mode an
+                # exception is raised when resolving ODXLINK
+                # references.
                 continue
             com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
