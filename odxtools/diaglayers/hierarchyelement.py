@@ -201,9 +201,9 @@ class HierarchyElement(DiagLayer):
         # diagnostic layer. Note that communication parameters do
         # *not* use value inheritance, but a slightly different
         # scheme, cf the docstring of
-        # _compute_available_commmunication_parameters().
+        # _compute_available_communication_parameters().
         #####
-        self._comparam_refs = NamedItemList(self._compute_available_commmunication_parameters())
+        self._comparam_refs = NamedItemList(self._compute_available_communication_parameters())
 
         #####
         # resolve all SNREFs. TODO: We allow SNREFS to objects that
@@ -484,7 +484,7 @@ class HierarchyElement(DiagLayer):
     #####
     # <communication parameter handling>
     #####
-    def _compute_available_commmunication_parameters(self) -> list[ComparamInstance]:
+    def _compute_available_communication_parameters(self) -> list[ComparamInstance]:
         """Compute the list of communication parameters that apply to
         the diagnostic layer
 
@@ -517,11 +517,18 @@ class HierarchyElement(DiagLayer):
             parent_layer = parent_ref.layer
             if not isinstance(parent_layer, HierarchyElement):
                 continue
-            for cp in parent_layer._compute_available_commmunication_parameters():
+            for cp in parent_layer._compute_available_communication_parameters():
                 com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
         # finally, handle the locally defined communication parameters
         for cp in getattr(self.hierarchy_element_raw, "comparam_refs", []):
+            if cp.spec is None:
+                # discard all COMPARAM-REFs which point to parameters
+                # that have not been defined. Note that this can only
+                # happen in non-strict mode since in strict mode an
+                # exception is raised when resolving ODXLINK
+                # references.
+                continue
             com_params_dict[(cp.spec_ref.ref_id, cp.protocol_snref)] = cp
 
         return list(com_params_dict.values())
