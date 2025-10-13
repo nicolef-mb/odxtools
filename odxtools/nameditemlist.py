@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: MIT
 import abc
 import typing
-import weakref
 from collections.abc import Collection, Iterable
 from keyword import iskeyword
 from typing import Any, SupportsIndex, TypeVar, overload, runtime_checkable
@@ -204,25 +203,15 @@ class NamedItemList(ItemAttributeList[T]):
 
         """
 
-        # isinstance() does not support checking a `weakref.proxy()`
-        # object against a type protocol. (checking `weakref.proxy()`
-        # objects against regular types works fine, though.) If the
-        # item is a `weakref.proxy()` object, we thus check the object
-        # which the item points to for its adherence to the `OdxNamed`
-        # type protocol. Since there seems to be no "official" way to
-        # determine this type, we need to go via the
-        # `__repr__.__self__` route...
-        if isinstance(item, (weakref.ProxyType, weakref.CallableProxyType)):
-            if not isinstance(item.__repr__.__self__, OdxNamed):  # type: ignore[attr-defined]
-                odxraise()
-            sn = item.short_name
-        elif not isinstance(item, OdxNamed):
-            odxraise()
-        else:
-            sn = item.short_name
-
-        if not isinstance(sn, str):
-            odxraise()
+        if (sn := getattr(item, "short_name", None)) is None:
+            odxraise(f"Object does not exhibit a .short_name attribute")
+            return
+        elif not isinstance(sn, str):
+            odxraise(f".short_name is not a string. (is: '{sn}')")
+            return
+        elif not sn:
+            odxraise(f".short_name is the empty string")
+            return
 
         # make sure that the name of the item in question is not a python
         # keyword (this would lead to syntax errors) and that does not
