@@ -58,6 +58,8 @@ class ItemAttributeList(list[T]):
 
     def _add_attribute_item(self, item: T) -> None:
         item_name = self._get_item_key(item)
+        if item_name is None:
+            return
 
         # eliminate conflicts between the name of the new item and
         # existing attributes of the ItemAttributeList object
