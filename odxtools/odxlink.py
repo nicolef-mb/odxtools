@@ -227,6 +227,12 @@ class OdxLinkDatabase:
                              f"type {expected_type.__name__}")
 
                 if use_weakrefs or (use_weakrefs is None and self.use_weakrefs):
+                    if isinstance(obj, (weakref.CallableProxyType, weakref.ProxyType)):
+                        # if the referenced object already is a
+                        # weakref proxy object, we can and must return
+                        # it directly. (weakref.proxy() raises an
+                        # exception if called for a proxy object.)
+                        return obj
                     return weakref.proxy(obj)
                 else:
                     return obj
@@ -283,6 +289,13 @@ class OdxLinkDatabase:
                     odxassert(isinstance(obj, expected_type))
 
                 if use_weakrefs or (use_weakrefs is None and self.use_weakrefs):
+                    if isinstance(obj, (weakref.CallableProxyType, weakref.ProxyType)):
+                        # if the referenced object already is a
+                        # weakref proxy object, we can and must return
+                        # it directly. (weakref.proxy() raises an
+                        # exception if called for a proxy object.)
+                        return obj
+
                     return weakref.proxy(obj)
                 else:
                     return obj
@@ -359,6 +372,12 @@ def resolve_snref(target_short_name: str,
                  f"object while expecting {expected_type.__name__}")
 
     if use_weakrefs:
+        if isinstance(candidates[0], (weakref.CallableProxyType, weakref.ProxyType)):
+            # if the referenced object already is a
+            # weakref proxy object, we can and must return
+            # it directly. (weakref.proxy() raises an
+            # exception if called for a proxy object.)
+            return candidates[0]
         return weakref.proxy(candidates[0])
     else:
         return candidates[0]
