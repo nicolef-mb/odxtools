@@ -33,6 +33,20 @@ class OdxDocFragment:
     doc_type: DocType
 
 
+def _wrap_referenced_object(obj: Any, use_weakref: bool | None) -> Any:
+    if not use_weakref:
+        return obj
+
+    if isinstance(obj, (weakref.CallableProxyType, weakref.ProxyType)):
+        # if the referenced object already is a
+        # weakref proxy object, we can and must return
+        # it directly. (weakref.proxy() raises an
+        # exception if called for a proxy object.)
+        return obj
+
+    return weakref.proxy(obj)
+
+
 @dataclass(frozen=True)
 class OdxLinkId:
     """The identifier of an ODX object.
@@ -204,6 +218,10 @@ class OdxLinkDatabase:
         If the database does not contain any object which is referred to, a
         KeyError exception is raised.
         """
+
+        if use_weakrefs is None:
+            use_weakrefs = self.use_weakrefs
+
         for ref_frag in reversed(ref.ref_docs):
             doc_frag_db = self._db.get(ref_frag)
             if doc_frag_db is None:
@@ -226,10 +244,7 @@ class OdxLinkDatabase:
                              f"{type(obj).__name__} which is not a subclass of expected "
                              f"type {expected_type.__name__}")
 
-                if use_weakrefs or (use_weakrefs is None and self.use_weakrefs):
-                    return weakref.proxy(obj)
-                else:
-                    return obj
+                return _wrap_referenced_object(obj, use_weakrefs)
 
         odxraise(
             f"ODXLINK reference {ref} could not be resolved for any "
@@ -264,6 +279,9 @@ class OdxLinkDatabase:
         is returned.
         """
 
+        if use_weakrefs is None:
+            use_weakrefs = self.use_weakrefs
+
         for ref_frag in reversed(ref.ref_docs):
             doc_frag_db = self._db.get(ref_frag)
             if doc_frag_db is None:
@@ -282,10 +300,7 @@ class OdxLinkDatabase:
                 if expected_type is not None:
                     odxassert(isinstance(obj, expected_type))
 
-                if use_weakrefs or (use_weakrefs is None and self.use_weakrefs):
-                    return weakref.proxy(obj)
-                else:
-                    return obj
+                return _wrap_referenced_object(obj, use_weakrefs)
 
         return None
 
@@ -358,7 +373,4 @@ def resolve_snref(target_short_name: str,
         odxraise(f"Reference '{target_short_name}' points to a {type(candidates[0]).__name__}"
                  f"object while expecting {expected_type.__name__}")
 
-    if use_weakrefs:
-        return weakref.proxy(candidates[0])
-    else:
-        return candidates[0]
+    return _wrap_referenced_object(candidates[0], use_weakrefs)
